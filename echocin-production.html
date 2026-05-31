@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>ECHOCIN PRODUCTION | Cinematic Excellence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --black:#000000;
+  --deep-red:#8B0000;
+  --neon-red:#FF1A1A;
+  --dark:#111111;
+  --white:#FFFFFF;
+  --glass:rgba(0,0,0,0.6);
+  --glass-border:rgba(255,26,26,0.18);
+}
+html{scroll-behavior:smooth}
+body{
+  background:#000;
+  color:#fff;
+  font-family:'Rajdhani',sans-serif;
+  overflow-x:hidden;
+  cursor:none;
+}
+::-webkit-scrollbar{width:2px}
+::-webkit-scrollbar-track{background:#000}
+::-webkit-scrollbar-thumb{background:var(--neon-red)}
+
+/* ─── CURSOR ─────────────────────────────────── */
+#cursor{
+  position:fixed;width:8px;height:8px;
+  background:var(--neon-red);border-radius:50%;
+  pointer-events:none;z-index:10000;
+  transform:translate(-50%,-50%);
+  mix-blend-mode:screen;
+  transition:width .2s,height .2s,background .2s;
+}
+#cursor.big{width:60px;height:60px;background:transparent;border:1px solid var(--neon-red)}
+#cursor-ring{
+  position:fixed;width:38px;height:38px;
+  border:1px solid rgba(255,26,26,.4);border-radius:50%;
+  pointer-events:none;z-index:9999;
+  transform:translate(-50%,-50%);
+  transition:border-color .3s;
+}
+
+/* ─── SCROLL INDICATOR ───────────────────────── */
+#scroll-bar{
+  position:fixed;top:0;left:0;height:2px;
+  background:linear-gradient(90deg,var(--deep-red),var(--neon-red));
+  z-index:500;width:0%;
+  box-shadow:0 0 8px var(--neon-red),0 0 20px rgba(255,26,26,.4);
+  transition:width .1s linear;
+}
+
+/* ─── SCANLINE ───────────────────────────────── */
+.scanline{
+  position:fixed;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(transparent,rgba(255,26,26,.04),transparent);
+  pointer-events:none;z-index:50;
+  animation:scan 10s linear infinite;
+}
+@keyframes scan{0%{transform:translateY(-2px)}100%{transform:translateY(100vh)}}
+
+/* ─── LOADING SCREEN ─────────────────────────── */
+#loading{
+  position:fixed;inset:0;background:#000;
+  z-index:9999;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  overflow:hidden;
+}
+#load-canvas{position:absolute;inset:0;width:100%;height:100%}
+#load-content{position:relative;z-index:2;text-align:center;padding:2rem}
+.brand-letters{
+  display:flex;align-items:center;justify-content:center;
+  flex-wrap:wrap;gap:1px;margin-bottom:2rem;
+}
+
+@media (max-width:768px){
+
+  .brand-letters{
+    width:100%;
+    max-width:280px;
+    flex-wrap:wrap;
+    justify-content:center;
+  }
+
+  .bl.sp{
+    flex-basis:100%;
+    width:100%;
+    height:0;
+  }
+
+}
+.bl{
+  font-family:'Orbitron',sans-serif;
+  font-size:clamp(1.8rem,5vw,4.5rem);
+  font-weight:900;
+  color:#fff;
+  opacity:0;
+  transform:translateY(40px) scale(0.8);
+  display:inline-block;
+  transition:opacity .4s cubic-bezier(.34,1.56,.64,1),transform .4s cubic-bezier(.34,1.56,.64,1);
+  text-shadow:0 0 30px rgba(255,26,26,0),0 0 60px rgba(255,26,26,0);
+}
+.bl.sp{width:1.2rem}
+.bl.on{
+  opacity:1;transform:translateY(0) scale(1);
+  text-shadow:0 0 20px rgba(255,26,26,.7),0 0 50px rgba(255,26,26,.3);
+}
+#load-tag{
+  font-family:'Share Tech Mono',monospace;
+  font-size:clamp(.55rem,1.4vw,.8rem);
+  color:var(--neon-red);letter-spacing:.4em;
+  text-transform:uppercase;opacity:0;margin-bottom:2.5rem;
+}
+#load-bar-wrap{
+  width:280px;height:1px;
+  background:rgba(255,255,255,.08);
+  margin:0 auto .8rem;opacity:0;position:relative;
+}
+#load-bar{
+  height:100%;width:0%;
+  background:linear-gradient(90deg,var(--deep-red),var(--neon-red));
+  box-shadow:0 0 12px var(--neon-red),0 0 24px rgba(255,26,26,.3);
+}
+#load-pct{
+  font-family:'Share Tech Mono',monospace;
+  font-size:.7rem;color:rgba(255,255,255,.4);
+  letter-spacing:.3em;opacity:0;
+}
+
+/* ─── NAV ────────────────────────────────────── */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  padding:1.8rem 5rem;
+  display:flex;align-items:center;justify-content:space-between;
+  background:linear-gradient(180deg,rgba(0,0,0,.85),transparent);
+  opacity:0;transition:opacity .8s;
+}
+.nav-logo{
+  font-family:'Orbitron',sans-serif;font-size:.95rem;
+  font-weight:900;letter-spacing:.35em;color:#fff;
+  text-decoration:none;
+}
+.nav-logo em{color:var(--neon-red);font-style:normal}
+.nav-links{display:flex;gap:3rem;list-style:none}
+.nav-links a{
+  font-family:'Share Tech Mono',monospace;font-size:.65rem;
+  color:rgba(255,255,255,.6);text-decoration:none;
+  letter-spacing:.25em;text-transform:uppercase;
+  transition:color .3s;position:relative;
+}
+.nav-links a::after{
+  content:'';position:absolute;bottom:-4px;left:0;right:0;
+  height:1px;background:var(--neon-red);
+  transform:scaleX(0);transition:transform .3s;
+}
+.nav-links a:hover{color:var(--neon-red)}
+.nav-links a:hover::after{transform:scaleX(1)}
+.nav-cta{
+  font-family:'Share Tech Mono',monospace;font-size:.65rem;
+  color:var(--neon-red);letter-spacing:.2em;
+  border:1px solid rgba(255,26,26,.4);
+  padding:.6rem 1.4rem;text-decoration:none;
+  transition:all .3s;
+}
+.nav-cta:hover{background:var(--neon-red);color:#000}
+
+/* ─── THREE.JS CANVAS ───────────────────────── */
+#three-canvas{
+  position:fixed;top:0;left:0;width:100%;height:100vh;
+  z-index:0;pointer-events:none;
+}
+
+/* ─── MAIN CONTENT ───────────────────────────── */
+#main{position:relative;z-index:2}
+
+/* ─── HERO ───────────────────────────────────── */
+#hero{
+  height:100vh;display:flex;flex-direction:column;
+  align-items:flex-start;justify-content:center;
+  padding:0 6rem;pointer-events:none;
+}
+#hero-eyebrow{
+  font-family:'Share Tech Mono',monospace;font-size:.7rem;
+  color:var(--neon-red);letter-spacing:.6em;text-transform:uppercase;
+  opacity:0;transform:translateY(15px);
+  margin-bottom:1.5rem;
+}
+#hero-h1{
+  font-family:'Orbitron',sans-serif;
+  font-size:clamp(2.5rem,6.5vw,6.5rem);
+  font-weight:900;line-height:1;
+  opacity:0;transform:translateY(20px);
+  margin-bottom:1.8rem;
+}
+#hero-h1 em{display:block;color:var(--neon-red);font-style:normal;
+  text-shadow:0 0 40px rgba(255,26,26,.6),0 0 80px rgba(255,26,26,.2);}
+#hero-sub{
+  font-size:clamp(.9rem,1.8vw,1.2rem);font-weight:300;
+  color:rgba(255,255,255,.5);letter-spacing:.25em;
+  text-transform:uppercase;
+  opacity:0;transform:translateY(15px);margin-bottom:3rem;
+}
+.cta-btn{
+  display:inline-flex;align-items:center;gap:1rem;
+  padding:1.1rem 2.8rem;
+  border:1px solid var(--neon-red);
+  font-family:'Orbitron',sans-serif;font-size:.7rem;
+  font-weight:700;color:#fff;text-decoration:none;
+  letter-spacing:.3em;text-transform:uppercase;
+  background:rgba(255,26,26,.05);
+  pointer-events:all;
+  transition:all .45s cubic-bezier(.25,.46,.45,.94);
+  position:relative;overflow:hidden;
+  opacity:0;transform:translateY(15px);
+}
+.cta-btn::before{
+  content:'';position:absolute;inset:0;
+  background:var(--neon-red);transform:translateX(-101%);
+  transition:transform .45s cubic-bezier(.25,.46,.45,.94);z-index:0;
+}
+.cta-btn span{position:relative;z-index:1}
+.cta-btn:hover{color:#000;box-shadow:0 0 40px rgba(255,26,26,.4)}
+.cta-btn:hover::before{transform:translateX(0)}
+
+/* ─── SCROLL SECTIONS ────────────────────────── */
+.s-section{
+  height:100vh;display:flex;align-items:center;
+  padding:0 6rem;position:relative;
+}
+.s-section.right-align{justify-content:flex-end}
+.s-section.center-align{justify-content:center;text-align:center}
+.s-panel{
+  max-width:480px;
+  background:rgba(0,0,0,.65);
+  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border:1px solid rgba(255,26,26,.15);
+  padding:3rem 2.5rem;
+  position:relative;
+  opacity:0;transform:translateX(-60px);
+  transition:opacity .9s cubic-bezier(.25,.46,.45,.94),transform .9s cubic-bezier(.25,.46,.45,.94);
+}
+.s-panel.from-right{transform:translateX(60px)}
+.s-panel.from-bottom{transform:translateY(50px)}
+.s-panel::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--neon-red),transparent);
+}
+.s-panel::after{
+  content:'';position:absolute;bottom:0;right:0;top:0;width:1px;
+  background:linear-gradient(180deg,transparent,rgba(255,26,26,.3),transparent);
+}
+.s-panel.visible{opacity:1;transform:translate(0)}
+.s-num{
+  font-family:'Share Tech Mono',monospace;font-size:.65rem;
+  color:var(--neon-red);letter-spacing:.5em;text-transform:uppercase;
+  margin-bottom:1rem;display:flex;align-items:center;gap:.8rem;
+}
+.s-num::before{content:'';flex:0 0 30px;height:1px;background:var(--neon-red)}
+.s-title{
+  font-family:'Orbitron',sans-serif;
+  font-size:clamp(1.8rem,3.5vw,2.8rem);
+  font-weight:800;line-height:1.05;margin-bottom:1.5rem;
+}
+.s-body{
+  font-size:1rem;color:rgba(255,255,255,.55);line-height:1.85;font-weight:300;
+}
+.s-list{list-style:none;margin-top:1.5rem}
+.s-list li{
+  font-family:'Share Tech Mono',monospace;font-size:.8rem;
+  color:rgba(255,255,255,.7);
+  padding:.65rem 0;border-bottom:1px solid rgba(255,26,26,.08);
+  display:flex;align-items:center;gap:.8rem;letter-spacing:.1em;
+  transition:color .3s,padding-left .3s;
+}
+.s-list li::before{content:'›';color:var(--neon-red);font-size:1.1rem}
+.s-list li:hover{color:#fff;padding-left:.5rem}
+.glow-bar{
+  width:1px;height:60px;
+  background:linear-gradient(180deg,transparent,var(--neon-red),transparent);
+  margin:1.5rem 0;animation:glowPulse 2.5s ease-in-out infinite;
+}
+.s-panel.from-bottom .glow-bar{margin:1.5rem auto}
+@keyframes glowPulse{0%,100%{opacity:.3}50%{opacity:1}}
+
+/* ─── SERVICES ───────────────────────────────── */
+#services{
+  padding:9rem 5rem;background:rgba(0,0,0,.95);
+  position:relative;z-index:5;overflow:hidden;
+}
+#services::before{
+  content:'';position:absolute;inset:0;
+  background:
+    linear-gradient(rgba(139,0,0,.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(139,0,0,.04) 1px,transparent 1px);
+  background-size:60px 60px;
+}
+.sec-header{text-align:center;margin-bottom:5rem}
+.sec-eyebrow{
+  font-family:'Share Tech Mono',monospace;font-size:.7rem;
+  color:var(--neon-red);letter-spacing:.6em;text-transform:uppercase;
+  margin-bottom:1rem;
+}
+.sec-h2{
+  font-family:'Orbitron',sans-serif;
+  font-size:clamp(2rem,4vw,3.2rem);font-weight:800;
+}
+.services-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(290px,1fr));
+  gap:1.5rem;max-width:1200px;margin:0 auto;
+}
+.s-card{
+  border:1px solid rgba(255,26,26,.08);
+  padding:2.8rem 2.2rem;
+  background:rgba(255,255,255,.015);
+  position:relative;overflow:hidden;cursor:none;
+  transition:all .5s cubic-bezier(.25,.46,.45,.94);
+  transform-style:preserve-3d;
+}
+.s-card::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(139,0,0,.0),rgba(255,26,26,.06));
+  opacity:0;transition:opacity .5s;
+}
+.s-card::after{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--neon-red),transparent);
+  transform:scaleX(0);transition:transform .5s;
+}
+.s-card:hover{
+  border-color:rgba(255,26,26,.45);
+  box-shadow:0 0 50px rgba(255,26,26,.12),0 25px 50px rgba(0,0,0,.5);
+}
+.s-card:hover::before{opacity:1}
+.s-card:hover::after{transform:scaleX(1)}
+.card-num{
+  position:absolute;top:2rem;right:2rem;
+  font-family:'Share Tech Mono',monospace;font-size:1.8rem;
+  color:rgba(255,26,26,.08);font-weight:700;
+}
+.card-icon{font-size:2.2rem;margin-bottom:1.5rem;display:block}
+.card-name{
+  font-family:'Orbitron',sans-serif;font-size:.9rem;
+  font-weight:700;letter-spacing:.1em;margin-bottom:1rem;
+  transition:color .3s;
+}
+.s-card:hover .card-name{color:var(--neon-red)}
+.card-desc{font-size:.9rem;color:rgba(255,255,255,.45);line-height:1.8}
+.card-arrow{
+  display:inline-flex;align-items:center;gap:.5rem;margin-top:1.5rem;
+  font-family:'Share Tech Mono',monospace;font-size:.65rem;
+  color:rgba(255,26,26,0);letter-spacing:.2em;text-transform:uppercase;
+  transition:color .3s,gap .3s;
+}
+.s-card:hover .card-arrow{color:var(--neon-red);gap:.8rem}
+
+/* ─── PORTFOLIO ──────────────────────────────── */
+#portfolio{
+  padding:9rem 5rem;background:#000;
+  position:relative;z-index:5;
+}
+.portfolio-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:1.5rem;max-width:1200px;margin:0 auto;
+}
+.p-item{
+  position:relative;overflow:hidden;cursor:none;
+  border:1px solid rgba(255,26,26,.08);
+  aspect-ratio:16/9;
+  background:#0a0a0a;
+  transition:border-color .4s,box-shadow .4s;
+  transform-style:preserve-3d;
+}
+.p-item:hover{
+  border-color:rgba(255,26,26,.4);
+  box-shadow:0 0 40px rgba(255,26,26,.1);
+}
+.p-thumb{
+  width:100%;height:100%;
+  display:flex;align-items:center;justify-content:center;
+  transition:transform .7s cubic-bezier(.25,.46,.45,.94);
+  position:relative;
+}
+.p-thumb::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(45deg,transparent 30%,rgba(255,26,26,.04) 50%,transparent 70%);
+}
+.p-item:hover .p-thumb{transform:scale(1.06)}
+.p-overlay{
+  position:absolute;inset:0;
+  background:rgba(0,0,0,.75);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:1rem;opacity:0;transition:opacity .4s;
+}
+.p-item:hover .p-overlay{opacity:1}
+.play-circle{
+  width:58px;height:58px;
+  border:1.5px solid var(--neon-red);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .35s;box-shadow:0 0 20px rgba(255,26,26,.25);
+}
+.p-item:hover .play-circle{background:var(--neon-red);box-shadow:0 0 40px rgba(255,26,26,.5)}
+.p-title{
+  font-family:'Orbitron',sans-serif;font-size:.75rem;
+  letter-spacing:.2em;color:#fff;
+}
+.p-type{
+  font-family:'Share Tech Mono',monospace;font-size:.6rem;
+  color:var(--neon-red);letter-spacing:.4em;
+}
+/* Portfolio holographic sheen */
+.p-item::before{
+  content:'';position:absolute;inset:0;z-index:3;
+  background:linear-gradient(135deg,
+    transparent 0%,rgba(255,26,26,.03) 30%,
+    rgba(255,255,255,.02) 50%,transparent 80%);
+  pointer-events:none;
+  transform:translateX(-100%);transition:transform .8s;
+}
+.p-item:hover::before{transform:translateX(100%)}
+
+/* ─── CONTACT ────────────────────────────────── */
+#contact{
+  padding:9rem 5rem;background:#000;
+  position:relative;z-index:5;overflow:hidden;
+}
+#contact-canvas{position:absolute;inset:0;width:100%;height:100%;opacity:.25}
+.contact-inner{position:relative;z-index:2;max-width:850px;margin:0 auto;text-align:center}
+.contact-title{
+  font-family:'Orbitron',sans-serif;
+  font-size:clamp(2.5rem,5vw,4.5rem);
+  font-weight:900;line-height:1;margin-bottom:0;
+}
+.contact-title em{color:var(--neon-red);font-style:normal;
+  text-shadow:0 0 40px rgba(255,26,26,.5)}
+.c-divider{
+  width:120px;height:1px;
+  background:linear-gradient(90deg,transparent,var(--neon-red),transparent);
+  margin:2.5rem auto;
+}
+.c-sub{
+  font-size:1.05rem;color:rgba(255,255,255,.5);
+  line-height:1.9;max-width:500px;margin:0 auto 3.5rem;
+}
+.contact-cards{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:1.5rem;margin-bottom:3.5rem;
+}
+.c-card{
+  border:1px solid rgba(255,26,26,.1);
+  padding:2rem 1.5rem;
+  transition:all .4s;cursor:none;
+  position:relative;overflow:hidden;
+}
+.c-card::before{
+  content:'';position:absolute;inset:0;
+  background:rgba(255,26,26,.03);opacity:0;transition:opacity .4s;
+}
+.c-card:hover{border-color:var(--neon-red);box-shadow:0 0 35px rgba(255,26,26,.18)}
+.c-card:hover::before{opacity:1}
+.c-icon{font-size:1.8rem;margin-bottom:.8rem;display:block}
+.c-label{
+  font-family:'Share Tech Mono',monospace;font-size:.6rem;
+  color:var(--neon-red);letter-spacing:.4em;text-transform:uppercase;margin-bottom:.5rem;
+}
+.c-val{
+  font-family:'Rajdhani',sans-serif;font-size:1.05rem;
+  color:rgba(255,255,255,.8);
+}
+
+/* ─── FOOTER ─────────────────────────────────── */
+footer{
+  background:#000;padding:2rem 5rem;
+  border-top:1px solid rgba(255,26,26,.08);
+  display:flex;align-items:center;justify-content:space-between;
+  position:relative;z-index:5;
+}
+.f-logo{
+  font-family:'Orbitron',sans-serif;font-size:.8rem;
+  font-weight:800;letter-spacing:.35em;color:rgba(255,255,255,.5);
+}
+.f-copy{
+  font-family:'Share Tech Mono',monospace;font-size:.6rem;
+  color:rgba(255,255,255,.25);letter-spacing:.2em;
+}
+
+/* ─── STAT BAR (hero bottom) ─────────────────── */
+.hero-stats{
+  position:absolute;bottom:3rem;left:6rem;right:6rem;
+  display:flex;gap:4rem;pointer-events:none;
+  opacity:0;transform:translateY(10px);
+}
+.stat{border-left:1px solid rgba(255,26,26,.3);padding-left:1.5rem}
+.stat-num{
+  font-family:'Orbitron',sans-serif;font-size:1.8rem;
+  font-weight:800;color:#fff;line-height:1;
+}
+.stat-num em{color:var(--neon-red);font-style:normal}
+.stat-label{
+  font-family:'Share Tech Mono',monospace;font-size:.6rem;
+  color:rgba(255,255,255,.4);letter-spacing:.2em;text-transform:uppercase;
+  margin-top:.3rem;
+}
+
+/* ─── SCROLL HINT ────────────────────────────── */
+.scroll-hint{
+  position:absolute;bottom:2.5rem;right:6rem;
+  display:flex;flex-direction:column;align-items:center;gap:.5rem;
+  opacity:0;pointer-events:none;
+}
+.scroll-hint span{
+  font-family:'Share Tech Mono',monospace;font-size:.6rem;
+  color:rgba(255,255,255,.3);letter-spacing:.3em;text-transform:uppercase;writing-mode:vertical-rl;
+}
+.scroll-line{
+  width:1px;height:50px;
+  background:linear-gradient(180deg,var(--neon-red),transparent);
+  animation:scrollAnim 2s ease-in-out infinite;
+}
+@keyframes scrollAnim{
+  0%{transform:scaleY(0);transform-origin:top}
+  50%{transform:scaleY(1);transform-origin:top}
+  51%{transform-origin:bottom}
+  100%{transform:scaleY(0);transform-origin:bottom}
+}
+
+/* ─── RESPONSIVE ─────────────────────────────── */
+@media(max-width:900px){
+  nav{padding:1.5rem 2rem}
+  .nav-links,.nav-cta{display:none}
+  #hero,.s-section{padding:0 2rem}
+  #hero-h1{font-size:clamp(2rem,8vw,4rem)}
+  .hero-stats{left:2rem;right:2rem;gap:2rem}
+  .scroll-hint{right:2rem}
+  #services,#portfolio,#contact{padding:6rem 2rem}
+  .portfolio-grid{grid-template-columns:1fr}
+  .contact-cards{grid-template-columns:1fr}
+  .services-grid{grid-template-columns:1fr}
+  footer{padding:2rem}
+}
+@media(max-width:600px){
+  .portfolio-grid{grid-template-columns:1fr}
+}
+
+.contact-cards a{
+  text-decoration:none;
+  color:inherit;
+  display:block;
+}
+
+.c-card{
+  cursor:pointer;
+}
+
+</style>
+</head>
+<body>
+
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+<div class="scanline"></div>
+<div id="scroll-bar"></div>
+
+<!-- ─── LOADING SCREEN ─────────────────────── -->
+<div id="loading">
+  <canvas id="load-canvas"></canvas>
+  <div id="load-content">
+    <div class="brand-letters" id="brand-letters"></div>
+    <div id="load-tag">CINEMATIC STORIES &nbsp;·&nbsp; TIMELESS FRAMES</div>
+    <div id="load-bar-wrap"><div id="load-bar"></div></div>
+    <div id="load-pct">0%</div>
+  </div>
+</div>
+
+<!-- ─── NAV ───────────────────────────────── -->
+<nav id="nav">
+  <a href="#" class="nav-logo">ECHO<em>CIN</em></a>
+  <ul class="nav-links">
+    <li><a href="#filmmaking">Film</a></li>
+    <li><a href="#services">Services</a></li>
+    <li><a href="#portfolio">Portfolio</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+  <a href="#contact" class="nav-cta">START A PROJECT</a>
+</nav>
+
+<!-- ─── THREE.JS CANVAS ────────────────────── -->
+<canvas id="three-canvas"></canvas>
+
+<!-- ─── MAIN CONTENT ──────────────────────── -->
+<div id="main">
+
+  <!-- HERO -->
+  <section id="hero">
+    <div id="hero-eyebrow">PREMIUM FILM PRODUCTION</div>
+    <h1 id="hero-h1">ECHOCIN<em>PRODUCTION</em></h1>
+    <p id="hero-sub">Cinematic Stories. Timeless Frames.</p>
+    <a href="#portfolio" class="cta-btn" id="hero-btn">
+      <span>VIEW OUR WORK</span>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
+        <path d="M0 6H14M14 6L9 1M14 6L9 11" stroke="currentColor" stroke-width="1.2"/>
+      </svg>
+    </a>
+    <div class="hero-stats" id="hero-stats">
+      <div class="stat"><div class="stat-num">500<em>+</em></div><div class="stat-label">Projects Delivered</div></div>
+      <div class="stat"><div class="stat-num">8<em>+</em></div><div class="stat-label">Years Experience</div></div>
+      <div class="stat"><div class="stat-num">12<em>+</em></div><div class="stat-label">Industry Awards</div></div>
+    </div>
+    <div class="scroll-hint" id="scroll-hint">
+      <div class="scroll-line"></div>
+      <span>SCROLL</span>
+    </div>
+  </section>
+
+  <!-- SECTION 1: FILMMAKING -->
+  <section class="s-section" id="filmmaking">
+    <div class="s-panel" data-from="left">
+      <div class="s-num">01 FILMMAKING</div>
+      <h2 class="s-title">FILM<br>MAKING</h2>
+      <div class="glow-bar"></div>
+      <p class="s-body">We create cinematic experiences that transform ordinary moments into unforgettable stories. Every frame is meticulously crafted with the precision of a master storyteller and the eye of a visionary artist.</p>
+    </div>
+  </section>
+
+  <!-- SECTION 2: COMMERCIAL -->
+  <section class="s-section right-align" id="commercial">
+    <div class="s-panel from-right" data-from="right">
+      <div class="s-num">02 COMMERCIAL</div>
+      <h2 class="s-title">COMMERCIAL<br>SHOOTS</h2>
+      <div class="glow-bar"></div>
+      <ul class="s-list">
+        <li>Brand Films &amp; Corporate Videos</li>
+        <li>Luxury Advertisements</li>
+        <li>Product Showcase Films</li>
+        <li>High-End Campaign Content</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- SECTION 3: WEDDINGS -->
+  <section class="s-section" id="weddings">
+    <div class="s-panel" data-from="left">
+      <div class="s-num">03 MOMENTS</div>
+      <h2 class="s-title">WEDDING<br>FILMS</h2>
+      <div class="glow-bar"></div>
+      <p class="s-body">Capturing the raw emotion, fleeting glances, and timeless love through cinematic storytelling. Your greatest moments preserved in frames that will outlast time itself.</p>
+    </div>
+  </section>
+
+  <!-- SECTION 4: CREATIVITY + TECH -->
+  <section class="s-section center-align" id="creativity">
+    <div class="s-panel from-bottom" data-from="bottom">
+      <div class="s-num">04 INNOVATION</div>
+      <h2 class="s-title">CREATIVITY<br>+ TECHNOLOGY</h2>
+      <div class="glow-bar"></div>
+      <p class="s-body">Where artistic vision converges with cutting-edge technology. We harness the full power of Sony cinema cameras and advanced post-production to deliver work that transcends expectations.</p>
+    </div>
+  </section>
+
+  <!-- SECTION 5: EVERY FRAME -->
+  <section class="s-section center-align" id="every-frame">
+    <div class="s-panel from-bottom" data-from="bottom">
+      <div class="s-num">05 PHILOSOPHY</div>
+      <h2 class="s-title">EVERY FRAME<br>TELLS A STORY</h2>
+      <div class="glow-bar"></div>
+      <p class="s-body">This is not just filmmaking — this is art. From the first frame to the last, every single shot is an intentional act of storytelling, emotion, and cinematic mastery.</p>
+    </div>
+  </section>
+
+  <!-- SERVICES -->
+  <section id="services">
+    <div class="sec-header">
+      <div class="sec-eyebrow">WHAT WE DO</div>
+      <h2 class="sec-h2">OUR SERVICES</h2>
+    </div>
+    <div class="services-grid" id="services-grid"></div>
+  </section>
+
+  <!-- PORTFOLIO -->
+  <section id="portfolio">
+    <div class="sec-header">
+      <div class="sec-eyebrow">OUR WORK</div>
+      <h2 class="sec-h2">PORTFOLIO</h2>
+    </div>
+    <div class="portfolio-grid" id="portfolio-grid"></div>
+  </section>
+
+  <!-- CONTACT -->
+  <section id="contact">
+    <canvas id="contact-canvas"></canvas>
+    <div class="contact-inner">
+      <div class="sec-eyebrow">GET IN TOUCH</div>
+      <h2 class="contact-title">ECHO<em>CIN</em><br>PRODUCTION</h2>
+      <div class="c-divider"></div>
+      <p class="c-sub">Ready to create something extraordinary? Let's transform your vision into a cinematic masterpiece.</p>
+<div class="contact-cards">
+
+  <a class="c-card" href="mailto:echocin.in@gmail.com">
+    <span class="c-icon">✉</span>
+    <div class="c-label">Email</div>
+    <div class="c-val">echocin.in@gmail.com</div>
+  </a>
+
+  <a class="c-card" href="tel:+917891045614">
+    <span class="c-icon">☎</span>
+    <div class="c-label">Phone</div>
+    <div class="c-val">+91 78910 45614</div>
+  </a>
+
+  <a class="c-card" href="https://www.instagram.com/echocin.in/" target="_blank">
+    <span class="c-icon">◉</span>
+    <div class="c-label">Instagram</div>
+    <div class="c-val">@echocin.in</div>
+  </a>
+
+</div>
+      <a href="https://wa.me/917891045614?text=Hello%20ECHOCIN%20PRODUCTION,%20I%20want%20to%20discuss%20a%20project." class="cta-btn"
+       style="margin:0 auto;display:inline-flex;opacity:1;transform:none">
+        <span>START YOUR PROJECT</span>
+        <svg width="14" height="10" viewBox="0 0 14 10" fill="none">
+          <path d="M0 5H12M12 5L7 1M12 5L7 9" stroke="currentColor" stroke-width="1.2"/>
+        </svg>
+      </a>
+    </div>
+  </section>
+
+  <footer>
+    <div class="f-logo">ECHOCIN PRODUCTION</div>
+    <div class="f-copy">© 2025 ECHOCIN. ALL RIGHTS RESERVED.</div>
+  </footer>
+
+</div><!-- /main -->
+
+<script>
+// ════════════════════════════════════════════════════════
+// SERVICES & PORTFOLIO DATA
+// ════════════════════════════════════════════════════════
+const SERVICES=[
+  {icon:'🎬',name:'VIDEO PRODUCTION',desc:'Full-scale cinematic production from concept to final delivery with Sony FX technology.'},
+  {icon:'📸',name:'PHOTOGRAPHY',desc:'Stunning editorial and commercial photography that captures the essence of every moment.'},
+  {icon:'💍',name:'WEDDING FILMS',desc:'Emotional, cinematic wedding films crafted with artistry you will treasure for generations.'},
+  {icon:'📡',name:'COMMERCIAL SHOOTS',desc:'High-impact commercial productions for luxury brands, campaigns and global advertising.'},
+  {icon:'🎯',name:'BRAND STORYTELLING',desc:'Authentic narratives that forge deep emotional connections between brands and their audience.'},
+  {icon:'📱',name:'SOCIAL CONTENT',desc:'Premium short-form content engineered for maximum impact across every digital platform.'}
+];
+
+const PORTFOLIO=[
+  {title:'AZURE BRAND FILM',type:'COMMERCIAL',color1:'#1a0505',color2:'#2d0808'},
+  {title:'ETERNAL MOMENTS',type:'WEDDING',color1:'#05081a',color2:'#0a0e2d'},
+  {title:'NEON CITY LIGHTS',type:'DOCUMENTARY',color1:'#0a0a0a',color2:'#1a1a1a'},
+  {title:'LUXURY REDEFINED',type:'BRAND STORY',color1:'#1a0808',color2:'#0a0505'},
+  {title:'SUMMER VIBES',type:'SOCIAL MEDIA',color1:'#031508',color2:'#06250e'},
+  {title:'IRON &amp; GRACE',type:'EDITORIAL',color1:'#080510',color2:'#100a20'}
+];
+
+// Build services
+const sg=document.getElementById('services-grid');
+SERVICES.forEach((s,i)=>{
+  sg.innerHTML+=`<div class="s-card" data-tilt>
+    <span class="card-num">0${i+1}</span>
+    <span class="card-icon">${s.icon}</span>
+    <div class="card-name">${s.name}</div>
+    <p class="card-desc">${s.desc}</p>
+    <div class="card-arrow">EXPLORE ›</div>
+  </div>`;
+});
+
+// Build portfolio
+const pg=document.getElementById('portfolio-grid');
+PORTFOLIO.forEach(p=>{
+  pg.innerHTML+=`<div class="p-item" data-tilt>
+    <div class="p-thumb" style="background:linear-gradient(135deg,${p.color1},${p.color2})">
+      <div style="color:rgba(255,26,26,.12);font-size:3.5rem;font-family:'Orbitron',sans-serif;font-weight:900">▶</div>
+    </div>
+    <div class="p-overlay">
+      <div class="play-circle">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <path d="M4 2L15 9L4 16V2Z" fill="white"/>
+        </svg>
+      </div>
+      <div class="p-title">${p.title}</div>
+      <div class="p-type">${p.type}</div>
+    </div>
+  </div>`;
+});
+
+// ════════════════════════════════════════════════════════
+// CUSTOM CURSOR
+// ════════════════════════════════════════════════════════
+const cursorEl=document.getElementById('cursor');
+const cursorRing=document.getElementById('cursor-ring');
+let cx=0,cy=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{cx=e.clientX;cy=e.clientY});
+document.querySelectorAll('a,.s-card,.p-item,.c-card').forEach(el=>{
+  el.addEventListener('mouseenter',()=>{cursorEl.style.width='0px';cursorEl.style.height='0px';cursorRing.style.width='60px';cursorRing.style.height='60px';cursorRing.style.borderColor='var(--neon-red)'});
+  el.addEventListener('mouseleave',()=>{cursorEl.style.width='8px';cursorEl.style.height='8px';cursorRing.style.width='38px';cursorRing.style.height='38px';cursorRing.style.borderColor='rgba(255,26,26,.4)'});
+});
+
+function tickCursor(){
+  rx+=(cx-rx)*.1;ry+=(cy-ry)*.1;
+  cursorEl.style.left=cx+'px';cursorEl.style.top=cy+'px';
+  cursorRing.style.left=rx+'px';cursorRing.style.top=ry+'px';
+  requestAnimationFrame(tickCursor);
+}
+tickCursor();
+
+// ════════════════════════════════════════════════════════
+// LOADING CANVAS PARTICLES
+// ════════════════════════════════════════════════════════
+const lc=document.getElementById('load-canvas');
+const lx=lc.getContext('2d');
+function resizeLC(){lc.width=innerWidth;lc.height=innerHeight}
+resizeLC();addEventListener('resize',resizeLC);
+
+const LP=Array.from({length:100},()=>({
+  x:Math.random()*innerWidth,y:Math.random()*innerHeight,
+  vx:(Math.random()-.5)*.4,vy:(Math.random()-.5)*.4,
+  r:Math.random()*1.5+.3,
+  a:Math.random()*.5+.1,
+  red:Math.random()>.4
+}));
+
+function drawLoadingBG(){
+  lx.clearRect(0,0,lc.width,lc.height);
+  const t=Date.now()/1000;
+  // Energy rings
+  for(let i=0;i<4;i++){
+    const rad=120+i*90+Math.sin(t*.7+i)*.25*90;
+    const grad=lx.createRadialGradient(lc.width/2,lc.height/2,rad*.85,lc.width/2,lc.height/2,rad);
+    grad.addColorStop(0,'transparent');
+    grad.addColorStop(.8,`rgba(139,0,0,${.05-i*.01})`);
+    grad.addColorStop(1,'transparent');
+    lx.fillStyle=grad;lx.fillRect(0,0,lc.width,lc.height);
+    lx.beginPath();lx.arc(lc.width/2,lc.height/2,rad,0,Math.PI*2);
+    lx.strokeStyle=`rgba(255,26,26,${.06-i*.01})`;
+    lx.lineWidth=1;lx.shadowBlur=20;lx.shadowColor='#FF1A1A';
+    lx.stroke();lx.shadowBlur=0;
+  }
+  // Particles
+  LP.forEach(p=>{
+    p.x+=p.vx;p.y+=p.vy;
+    if(p.x<0)p.x=lc.width;if(p.x>lc.width)p.x=0;
+    if(p.y<0)p.y=lc.height;if(p.y>lc.height)p.y=0;
+    lx.beginPath();lx.arc(p.x,p.y,p.r,0,Math.PI*2);
+    lx.fillStyle=p.red?`rgba(255,26,26,${p.a})`:`rgba(139,0,0,${p.a})`;
+    lx.shadowBlur=p.red?15:0;lx.shadowColor='#FF1A1A';
+    lx.fill();lx.shadowBlur=0;
+  });
+  requestAnimationFrame(drawLoadingBG);
+}
+drawLoadingBG();
+
+// ════════════════════════════════════════════════════════
+// CONTACT CANVAS GRID
+// ════════════════════════════════════════════════════════
+const cc=document.getElementById('contact-canvas');
+const cx2=cc.getContext('2d');
+function resizeCC(){const s=document.getElementById('contact');cc.width=s.offsetWidth;cc.height=s.offsetHeight}
+addEventListener('load',resizeCC);addEventListener('resize',resizeCC);
+function drawGrid(){
+  if(!cc.width){requestAnimationFrame(drawGrid);return}
+  cx2.clearRect(0,0,cc.width,cc.height);
+  const t=Date.now()/4000,gs=65;
+  cx2.strokeStyle='rgba(139,0,0,.2)';cx2.lineWidth=.5;
+  for(let x=0;x<cc.width;x+=gs){cx2.beginPath();cx2.moveTo(x,0);cx2.lineTo(x,cc.height);cx2.stroke()}
+  for(let y=0;y<cc.height;y+=gs){cx2.beginPath();cx2.moveTo(0,y);cx2.lineTo(cc.width,y);cx2.stroke()}
+  const sy=(Math.sin(t)*0.5+0.5)*cc.height;
+  const g2=cx2.createLinearGradient(0,sy-80,0,sy+80);
+  g2.addColorStop(0,'transparent');g2.addColorStop(.5,'rgba(255,26,26,.06)');g2.addColorStop(1,'transparent');
+  cx2.fillStyle=g2;cx2.fillRect(0,sy-80,cc.width,160);
+  requestAnimationFrame(drawGrid);
+}
+drawGrid();
+
+// ════════════════════════════════════════════════════════
+// LOADING SEQUENCE
+// ════════════════════════════════════════════════════════
+const TEXT='ECHOCIN PRODUCTION';
+const bEl=document.getElementById('brand-letters');
+TEXT.split('').forEach(ch=>{
+  const s=document.createElement('span');
+  s.className='bl'+(ch===' '?' sp':'');
+  s.textContent=ch===' '?'\u00A0':ch;
+  bEl.appendChild(s);
+});
+
+let loadPct=0;
+const pBar=document.getElementById('load-bar');
+const pPct=document.getElementById('load-pct');
+
+function runLoading(){
+  const letters=document.querySelectorAll('.bl:not(.sp)');
+  letters.forEach((l,i)=>setTimeout(()=>l.classList.add('on'),200+i*70));
+  const tag=document.getElementById('load-tag'),
+        bw=document.getElementById('load-bar-wrap');
+  setTimeout(()=>{
+    [tag,bw,pPct].forEach(el=>{el.style.transition='opacity .8s';el.style.opacity='1'});
+  },1800);
+  setTimeout(()=>{
+    const iv=setInterval(()=>{
+      loadPct+=Math.random()*2.5+.5;
+      if(loadPct>=100){loadPct=100;clearInterval(iv);setTimeout(exitLoading,600)}
+      pBar.style.width=loadPct+'%';
+      pPct.textContent=Math.floor(loadPct)+'%';
+    },50);
+  },2200);
+}
+
+function exitLoading(){
+  const ls=document.getElementById('loading');
+  ls.style.transition='opacity 1.1s cubic-bezier(.7,0,.3,1),transform 1.1s cubic-bezier(.7,0,.3,1)';
+  ls.style.opacity='0';ls.style.transform='scale(1.04)';
+  setTimeout(()=>{
+    ls.style.display='none';
+    revealPage();
+  },1100);
+}
+
+function revealPage(){
+  const nav=document.getElementById('nav');
+  nav.style.opacity='1';
+  const items=[
+    {el:document.getElementById('hero-eyebrow'),d:0},
+    {el:document.getElementById('hero-h1'),d:180},
+    {el:document.getElementById('hero-sub'),d:340},
+    {el:document.getElementById('hero-btn'),d:500},
+    {el:document.getElementById('hero-stats'),d:700},
+    {el:document.getElementById('scroll-hint'),d:900}
+  ];
+  items.forEach(({el,d})=>{
+    if(!el)return;
+    setTimeout(()=>{
+      el.style.transition='opacity .8s cubic-bezier(.25,.46,.45,.94),transform .8s cubic-bezier(.25,.46,.45,.94)';
+      el.style.opacity='1';el.style.transform='translateY(0)';
+    },d);
+  });
+}
+
+// ════════════════════════════════════════════════════════
+// THREE.JS SCENE
+// ════════════════════════════════════════════════════════
+const tc=document.getElementById('three-canvas');
+const scene=new THREE.Scene();
+scene.fog=new THREE.FogExp2(0x000000,.04);
+
+const cam3=new THREE.PerspectiveCamera(42,innerWidth/innerHeight,.1,1000);
+cam3.position.set(0,.15,8.5);
+
+const renderer=new THREE.WebGLRenderer({canvas:tc,antialias:true,alpha:true});
+renderer.setSize(innerWidth,innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.toneMapping=THREE.ReinhardToneMapping;
+renderer.toneMappingExposure=1.8;
+
+// ─── LIGHTS ────────────────────────────────────
+const aLight=new THREE.AmbientLight(0x0a0a0a,.8);
+scene.add(aLight);
+
+const keyL=new THREE.DirectionalLight(0xffffff,2.5);
+keyL.position.set(6,9,6);keyL.castShadow=true;
+keyL.shadow.mapSize.width=2048;keyL.shadow.mapSize.height=2048;
+scene.add(keyL);
+
+const fillL=new THREE.DirectionalLight(0x4466ff,.4);
+fillL.position.set(-6,0,4);scene.add(fillL);
+
+const backL=new THREE.DirectionalLight(0xffffff,.6);
+backL.position.set(0,2,-6);scene.add(backL);
+
+const redL1=new THREE.PointLight(0xFF1A1A,4,18);
+redL1.position.set(-5,-2,5);scene.add(redL1);
+
+const redL2=new THREE.PointLight(0xFF0000,3,14);
+redL2.position.set(5,-1,-4);scene.add(redL2);
+
+const rimL=new THREE.PointLight(0xFF4444,2,12);
+rimL.position.set(3,4,3);scene.add(rimL);
+
+const underL=new THREE.PointLight(0x330000,2,10);
+underL.position.set(0,-4,2);scene.add(underL);
+
+// ─── PARTICLES ─────────────────────────────────
+const PCNT=220;
+const pGeo=new THREE.BufferGeometry();
+const pPos=new Float32Array(PCNT*3);
+const pVel=[];
+for(let i=0;i<PCNT;i++){
+  pPos[i*3]=(Math.random()-.5)*22;
+  pPos[i*3+1]=(Math.random()-.5)*22;
+  pPos[i*3+2]=(Math.random()-.5)*12;
+  pVel.push({x:(Math.random()-.5)*.003,y:(Math.random()-.5)*.003,z:(Math.random()-.5)*.0015});
+}
+pGeo.setAttribute('position',new THREE.BufferAttribute(pPos,3));
+const pMat=new THREE.PointsMaterial({color:0xFF1A1A,size:.04,transparent:true,opacity:.55,sizeAttenuation:true});
+const pMesh=new THREE.Points(pGeo,pMat);
+scene.add(pMesh);
+
+// ─── SONY CINEMA CAMERA MODEL ──────────────────
+function buildCamera(){
+  const G=new THREE.Group();
+  const PARTS={};
+
+  // Materials
+  const mBody=new THREE.MeshStandardMaterial({color:0x0c0c0c,metalness:.55,roughness:.65});
+  const mMetal=new THREE.MeshStandardMaterial({color:0x1c1c1c,metalness:.97,roughness:.12});
+  const mShine=new THREE.MeshStandardMaterial({color:0x2d2d2d,metalness:1,roughness:.04});
+  const mLens=new THREE.MeshStandardMaterial({color:0x030303,metalness:.98,roughness:.01});
+  const mGlass=new THREE.MeshStandardMaterial({color:0x091520,metalness:.05,roughness:.0,transparent:true,opacity:.65});
+  const mRedGlass=new THREE.MeshStandardMaterial({color:0x1a0000,emissive:0x550000,emissiveIntensity:.8,metalness:.1,roughness:.05,transparent:true,opacity:.8});
+  const mAccent=new THREE.MeshStandardMaterial({color:0xFF1A1A,emissive:0xFF0000,emissiveIntensity:2.2,metalness:.3,roughness:.4});
+  const mRubber=new THREE.MeshStandardMaterial({color:0x060606,metalness:0,roughness:1});
+  const mScreen=new THREE.MeshStandardMaterial({color:0x000814,emissive:0x001040,emissiveIntensity:.4,metalness:.05,roughness:.15});
+  const mGold=new THREE.MeshStandardMaterial({color:0x4a3800,metalness:.95,roughness:.1});
+
+  function add(mesh,parent){(parent||G).add(mesh);mesh.castShadow=true;return mesh}
+  function box(w,h,d,mat){return new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat)}
+  function cyl(rt,rb,h,seg,mat){return new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,seg),mat)}
+  function sph(r,ws,hs,mat){return new THREE.Mesh(new THREE.SphereGeometry(r,ws,hs),mat)}
+
+  // ─ BODY
+  const body=add(box(2.5,1.45,1.6,mBody));
+  PARTS.body=body;
+
+  // Rubber grip band (middle-lower)
+  const grip=box(2.52,0.62,1.62,mRubber);grip.position.y=-.12;add(grip);
+
+  // Front + back faces
+  const fFace=box(.04,1.45,1.6,mMetal);fFace.position.x=1.22;add(fFace);
+  const bFace=box(.04,1.45,1.6,mMetal);bFace.position.x=-1.22;add(bFace);
+
+  // Side rails
+  const topRail=box(2.5,.04,1.62,mShine);topRail.position.y=.745;add(topRail);
+  PARTS.topRail=topRail;
+  const botRail=box(2.5,.04,1.62,mShine);botRail.position.y=-.745;add(botRail);
+  const tripod=cyl(.09,.09,.08,20,mShine);tripod.position.set(.2,-.82,.1);add(tripod);
+
+  // ─ TOP CONTROLS
+  const topPlate=box(2.0,.1,1.2,mShine);topPlate.position.y=.8;add(topPlate);
+  PARTS.topPlate=topPlate;
+
+  // Mode dial
+  const modeDial=cyl(.2,.2,.1,40,mMetal);modeDial.rotation.x=Math.PI/2;modeDial.position.set(-.75,.85,-.15);add(modeDial);
+  const dialLine=box(.02,.02,.1,mAccent);dialLine.position.set(-.75,.95,-.15);add(dialLine);
+  PARTS.modeDial=modeDial;
+
+  // Record button (red)
+  const recBtn=cyl(.09,.09,.06,20,mAccent);recBtn.rotation.x=Math.PI/2;recBtn.position.set(.8,.87,-.15);add(recBtn);
+  PARTS.recBtn=recBtn;
+
+  // Hot shoe
+  const hotShoe=box(.55,.05,.2,mShine);hotShoe.position.set(.25,.88,.1);add(hotShoe);
+  const hsInner=box(.4,.03,.12,mMetal);hsInner.position.set(.25,.93,.1);add(hsInner);
+
+  // Small buttons on top
+  [-0.2,0.1,0.4].forEach((z,i)=>{
+    const b=cyl(.045,.045,.045,14,mMetal);b.rotation.x=Math.PI/2;b.position.set(.35,.86,z);add(b);
+  });
+
+  // ─ LENS SYSTEM
+  const LG=new THREE.Group();LG.position.x=1.1;
+
+  // Mount ring (E-mount style)
+  const mountRing=cyl(.44,.44,.1,72,mShine);mountRing.rotation.z=Math.PI/2;add(mountRing,LG);
+  const mountInner=cyl(.38,.38,.12,72,mMetal);mountInner.rotation.z=Math.PI/2;add(mountInner,LG);
+
+  // Gold mount contacts
+  for(let i=0;i<8;i++){
+    const a=i/8*Math.PI*2;
+    const cont=box(.02,.03,.06,mGold);
+    cont.position.set(.06,Math.cos(a)*.38,Math.sin(a)*.38);
+    add(cont,LG);
+  }
+
+  // Barrel segments (tapering front)
+  const b1=cyl(.38,.35,.55,72,mLens);b1.rotation.z=Math.PI/2;b1.position.x=.28;add(b1,LG);
+  PARTS.b1=b1;
+  const b2=cyl(.35,.4,.42,72,mMetal);b2.rotation.z=Math.PI/2;b2.position.x=.7;add(b2,LG);
+  PARTS.b2=b2;
+  const focusRing=cyl(.41,.41,.32,72,mRubber);focusRing.rotation.z=Math.PI/2;focusRing.position.x=.52;add(focusRing,LG);
+  const b3=cyl(.42,.4,.38,72,mLens);b3.rotation.z=Math.PI/2;b3.position.x=1.01;add(b3,LG);
+  PARTS.b3=b3;
+  const zoomRing=cyl(.43,.43,.18,72,mRubber);zoomRing.rotation.z=Math.PI/2;zoomRing.position.x=.82;add(zoomRing,LG);
+
+  // Front hood/element housing
+  const frontHood=cyl(.48,.43,.18,72,mShine);frontHood.rotation.z=Math.PI/2;frontHood.position.x=1.24;add(frontHood,LG);
+  PARTS.frontHood=frontHood;
+  const filterRing=cyl(.44,.44,.04,72,mMetal);filterRing.rotation.z=Math.PI/2;filterRing.position.x=1.35;add(filterRing,LG);
+
+  // Front glass element (multiple coatings)
+  const glass1=cyl(.41,.41,.04,72,mGlass);glass1.rotation.z=Math.PI/2;glass1.position.x=1.37;add(glass1,LG);
+  PARTS.glass1=glass1;
+  const glass2=cyl(.33,.33,.03,72,mRedGlass);glass2.rotation.z=Math.PI/2;glass2.position.x=1.4;add(glass2,LG);
+  PARTS.glass2=glass2;
+  const glassCore=cyl(.2,.2,.02,72,mAccent);glassCore.rotation.z=Math.PI/2;glassCore.position.x=1.42;add(glassCore,LG);
+  PARTS.glassCore=glassCore;
+
+  // Lens inner glow light
+  const lensLight=new THREE.PointLight(0xFF0000,1.5,3);
+  lensLight.position.set(1.4,0,0);LG.add(lensLight);
+  PARTS.lensLight=lensLight;
+
+  G.add(LG);PARTS.LG=LG;
+
+  // ─ FLIP SCREEN (left side)
+  const SG=new THREE.Group();SG.position.set(-.85,.05,.88);
+  const scBody=box(.07,.55,.78,mMetal);add(scBody,SG);
+  const scGlass=box(.03,.5,.73,mScreen);scGlass.position.set(.04,0,.02);add(scGlass,SG);
+  // Screen glow lines
+  for(let i=0;i<5;i++){
+    const l=box(.02,.02,.68,mAccent);l.position.set(.05,-.2+i*.1,0);l.material=l.material.clone();l.material.emissiveIntensity=.3;
+    add(l,SG);
+  }
+  G.add(SG);PARTS.SG=SG;
+
+  // ─ XLR PORTS (back)
+  [-0.22,.12].forEach(y=>{
+    const xlr=cyl(.05,.05,.2,20,mMetal);xlr.rotation.z=Math.PI/2;xlr.position.set(-1.28,y,-.45);add(xlr);
+    const xlrInner=cyl(.03,.03,.18,20,new THREE.MeshStandardMaterial({color:0x000000}));xlrInner.rotation.z=Math.PI/2;xlrInner.position.set(-1.38,y,-.45);add(xlrInner);
+  });
+
+  // USB-C port
+  const usb=box(.15,.06,.06,mMetal);usb.position.set(-1.27,-.1,.3);add(usb);
+
+  // ─ SIDE BUTTONS (right)
+  [.35,.15,-.05,-.25].forEach((y,i)=>{
+    const b=box(.07,.1,.09,i===0?mAccent:mMetal);b.position.set(1.26,y,.42);add(b);
+  });
+
+  // ─ RED LED ACCENT LINES
+  const led1=box(2.4,.015,.015,mAccent);led1.position.set(0,-.75,.81);add(led1);
+  const led2=box(.015,1.45,.015,mAccent);led2.position.set(-1.25,0,.81);add(led2);
+  const led3=box(.015,.015,1.6,mAccent);led3.position.set(1.25,.73,0);add(led3);
+
+  // ─ VIEWFINDER (back top)
+  const vf=box(.45,.32,.12,mBody);vf.position.set(-.5,.63,-.88);add(vf);
+  const vfGlass=box(.42,.28,.06,mScreen);vfGlass.position.set(-.5,.63,-.95);add(vfGlass);
+  const vfRing=box(.45,.32,.04,mShine);vfRing.position.set(-.5,.63,-.92);add(vfRing);
+
+  // ─ DIOPTER DIAL
+  const diop=cyl(.06,.06,.12,20,mShine);diop.rotation.z=Math.PI/2;diop.position.set(-.25,.65,-.9);add(diop);
+
+  G.scale.set(.82,.82,.82);
+  return{group:G,parts:PARTS};
+}
+
+const {group:camModel,parts:camParts}=buildCamera();
+scene.add(camModel);
+
+// Store original/explode positions
+const origPos={};
+const explPos={};
+Object.keys(camParts).forEach(k=>{
+  const p=camParts[k];
+  if(p&&p.position){
+    origPos[k]=p.position.clone();
+    explPos[k]=new THREE.Vector3(
+      p.position.x+(Math.random()-.5)*6,
+      p.position.y+(Math.random()-.5)*6,
+      p.position.z+(Math.random()-.5)*5
+    );
+  }
+});
+
+// ════════════════════════════════════════════════════════
+// SCROLL SYSTEM
+// ════════════════════════════════════════════════════════
+let tRotY=0,tRotX=0,tCamZ=8.5;
+let cRotY=0,cRotX=0,cCamZ=8.5;
+let exploding=false;
+let mX=0,mY=0;
+
+function lerp(a,b,t){return a+(b-a)*t}
+
+function sectionVisible(id){
+  const s=document.getElementById(id);
+  if(!s)return false;
+  const r=s.getBoundingClientRect();
+  return r.top<innerHeight*.65&&r.bottom>innerHeight*.35;
+}
+
+window.addEventListener('scroll',()=>{
+  const sp=scrollY/(document.documentElement.scrollHeight-innerHeight);
+  document.getElementById('scroll-bar').style.width=(sp*100)+'%';
+
+  // Panel reveals
+  document.querySelectorAll('.s-panel').forEach(el=>{
+    const r=el.getBoundingClientRect();
+    if(r.top<innerHeight*.85)el.classList.add('visible');
+  });
+
+  // Camera states
+  if(sectionVisible('filmmaking')){
+    tRotY=-Math.PI/5;tRotX=0;tCamZ=8.5;exploding=false;
+  } else if(sectionVisible('commercial')){
+    tRotY=Math.PI/6;tRotX=-.08;tCamZ=5.8;exploding=false;
+  } else if(sectionVisible('weddings')){
+    tRotY=Math.PI/4;tRotX=Math.PI/10;tCamZ=7.5;exploding=false;
+  } else if(sectionVisible('creativity')){
+    exploding=true;tCamZ=10;
+  } else if(sectionVisible('every-frame')){
+    tRotY=0;tRotX=.1;tCamZ=4.2;exploding=false;
+  } else if(sectionVisible('hero')){
+    tRotY=0;tRotX=0;tCamZ=8.5;exploding=false;
+  } else {
+    tRotY=0;tRotX=0;tCamZ=8.5;exploding=false;
+  }
+});
+
+document.addEventListener('mousemove',e=>{
+  mX=(e.clientX/innerWidth-.5)*2;
+  mY=(e.clientY/innerHeight-.5)*2;
+});
+
+// ─── 3D TILT ON CARDS ──────────────────────────
+document.addEventListener('mousemove',e=>{
+  document.querySelectorAll('[data-tilt]').forEach(el=>{
+    const r=el.getBoundingClientRect();
+    if(e.clientX>r.left&&e.clientX<r.right&&e.clientY>r.top&&e.clientY<r.bottom){
+      const x=(e.clientX-r.left)/r.width-.5;
+      const y=(e.clientY-r.top)/r.height-.5;
+      el.style.transform=`translateY(-8px) rotateX(${-y*16}deg) rotateY(${x*16}deg)`;
+    } else {
+      el.style.transform='';
+    }
+  });
+});
+
+// ─── MAGNETIC BUTTONS ──────────────────────────
+document.querySelectorAll('.cta-btn,.nav-cta').forEach(btn=>{
+  btn.addEventListener('mousemove',e=>{
+    const r=btn.getBoundingClientRect();
+    const x=(e.clientX-r.left-r.width/2)*.35;
+    const y=(e.clientY-r.top-r.height/2)*.35;
+    btn.style.transform=`translate(${x}px,${y}px)`;
+  });
+  btn.addEventListener('mouseleave',()=>btn.style.transform='');
+});
+
+// ════════════════════════════════════════════════════════
+// ANIMATION LOOP
+// ════════════════════════════════════════════════════════
+const clock=new THREE.Clock();
+
+function tick(){
+  requestAnimationFrame(tick);
+  const t=clock.getElapsedTime();
+
+  // Smooth camera state
+  cRotY=lerp(cRotY,tRotY,.055);
+  cRotX=lerp(cRotX,tRotX,.055);
+  cCamZ=lerp(cCamZ,tCamZ,.055);
+
+  // Apply rotation: base + scroll + mouse parallax + auto rotation
+  camModel.rotation.y=cRotY+mX*.1+t*.04;
+  camModel.rotation.x=cRotX+mY*.05;
+
+  // Floating
+  camModel.position.y=Math.sin(t*.55)*.18;
+  camModel.position.x=Math.sin(t*.3)*.04;
+
+  cam3.position.z=cCamZ;
+
+  // Explosion/reassemble
+  if(exploding){
+    const ef=Math.sin(t*.9)*.5+.5;
+    Object.keys(camParts).forEach(k=>{
+      const p=camParts[k];
+      if(p&&p.position&&origPos[k]&&explPos[k]){
+        p.position.lerpVectors(origPos[k],explPos[k],ef*.8);
+        if(p.rotation&&k!=='LG')p.rotation.y=t*.6;
+      }
+    });
+  } else {
+    Object.keys(camParts).forEach(k=>{
+      const p=camParts[k];
+      if(p&&p.position&&origPos[k]){
+        p.position.lerp(origPos[k],.07);
+        if(p.rotation&&k!=='LG'&&k!=='modeDial'){
+          p.rotation.y=lerp(p.rotation.y,0,.07);
+        }
+      }
+    });
+  }
+
+  // Lights animation
+  redL1.intensity=3.5+Math.sin(t*2.2)*.8;
+  redL2.intensity=2.5+Math.cos(t*1.7)*.6;
+  rimL.position.set(3+Math.cos(t*.4)*1.5,4,3+Math.sin(t*.4)*1.5);
+  if(camParts.lensLight)camParts.lensLight.intensity=1.5+Math.sin(t*3)*.5;
+
+  // Particles
+  for(let i=0;i<PCNT;i++){
+    pPos[i*3]+=pVel[i].x;pPos[i*3+1]+=pVel[i].y;pPos[i*3+2]+=pVel[i].z;
+    if(Math.abs(pPos[i*3])>11)pVel[i].x*=-1;
+    if(Math.abs(pPos[i*3+1])>11)pVel[i].y*=-1;
+    if(Math.abs(pPos[i*3+2])>6)pVel[i].z*=-1;
+  }
+  pGeo.attributes.position.needsUpdate=true;
+  pMat.opacity=.4+Math.sin(t*.5)*.15;
+
+  renderer.render(scene,cam3);
+}
+
+// ════════════════════════════════════════════════════════
+// RESIZE
+// ════════════════════════════════════════════════════════
+window.addEventListener('resize',()=>{
+  cam3.aspect=innerWidth/innerHeight;
+  cam3.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);
+  resizeLC();
+  setTimeout(resizeCC,100);
+});
+
+// ════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════
+window.addEventListener('load',()=>{
+  runLoading();
+  tick();
+});
+</script>
+</body>
+</html>
